@@ -1,19 +1,153 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+variables:
+  system.debug: 'false'
+  lastCommitMessage: 1.10.28 - Added Support for EventAirs Code Format
+  pr.check.id: ''
+  pr.status.id: ''
+  MOBILECENTER_OUTPUT_DIRECTORY: $(Build.ArtifactStagingDirectory)/build
+  MOBILECENTER_BRANCH: master
+  MOBILECENTER_BUILD_ID: $(Build.BuildNumber)
+  MOBILECENTER_SOURCE_DIRECTORY: $(Build.Repository.LocalPath)
+  MOBILECENTER_TRIGGER: continuous
+  APPCENTER_OUTPUT_DIRECTORY: $(Build.ArtifactStagingDirectory)/build
+  APPCENTER_BRANCH: master
+  APPCENTER_BUILD_ID: $(Build.BuildNumber)
+  APPCENTER_SOURCE_DIRECTORY: $(Build.Repository.LocalPath)
+  APPCENTER_TRIGGER: continuous
+  buildScripts.toolset: '{}'
+  SDK: iphoneos
+  TestSDK: iphonesimulator
+  P12Password: null
+  P12Filename: Certificates.p12
+  MobileProvisionFilename: LupApp_InHouse_x202525.mobileprovision
+  P12SecureFileId: 9b56072b-8ba9-4f50-9954-d682748defad
+  MobileProvisionSecureFileId: c77f0f16-e219-4145-9fcc-bc7e9ac52d0c
+  AppExtensionProvisionSecureFiles: '[]'
+  MobileProvision: >-
+    {"expirationDate":"2027-03-25T03:01:44.000Z","teamIdentifier":"66LZ29Q44H","type":"enterprise","bundleIdentifier":"com.EmatterTechnologies.LupApp","UUID":"40c83575-78b7-48f2-87fc-49bf0eb14f48"}
+  MOBILECENTER_XCODE_PROJECT: LupApp.xcworkspace
+  MOBILECENTER_XCODE_SCHEME: Calabash
+  APPCENTER_XCODE_PROJECT: LupApp.xcworkspace
+  APPCENTER_XCODE_WORKSPACE: LupApp.xcworkspace
+  APPCENTER_XCODE_SCHEME: Calabash
+  sonoma.tags: 'continuous,xcode,signed'
+name: $(BuildID)
+jobs:
+  - job: Phase_1
+    displayName: Build
+    cancelTimeoutInMinutes: 0
+    pool:
+      name: Azure Pipelines
+      vmImage: macOS-11
+    steps:
+      - checkout: self
+        clean: true
+        submodules: recursive
+        lfs: true
+      - task: PowerShell@2
+        displayName: Install build scripts
+        continueOnError: true
+        inputs:
+          targetType: inline
+          scriptName: ''
+          script: >-
+            Set-Location -Path '$(Agent.HomeDirectory)'
 
-trigger:
-- main
+            Invoke-WebRequest -Uri
+            'https://appcenterbuildassets.azureedge.net/buildscripts/appcenter-build-assets-latest.zip'
+            -OutFile 'appcenter-build-assets-latest.zip'
 
-pool:
-  vmImage: ubuntu-latest
+            if (Test-Path ./scripts) { Remove-Item -Path ./scripts -Force
+            -Recurse }
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+            New-Item -ItemType directory -Path 'scripts' | Out-Null
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+            unzip -q -d 'scripts' 'appcenter-build-assets-latest.zip'
+
+            Invoke-Expression 'bash ./scripts/init.sh'
+          failOnStderr: true
+      - task: ShellScript@2
+        displayName: Tag build
+        inputs:
+          scriptPath: $(Agent.HomeDirectory)/scripts/emit-tags.sh
+          args: $(sonoma.tags)
+      - task: CmdLine@1
+        displayName: Set Xcode path
+        inputs:
+          filename: /bin/bash
+          arguments: >-
+            -c "sudo xcode-select --switch
+            /Applications/Xcode_14.1.app/Contents/Developer"
+      - task: InstallAppleCertificate@2
+        displayName: Install Apple certificate
+        inputs:
+          certSecureFile: 9b56072b-8ba9-4f50-9954-d682748defad
+          certPwd: $(P12Password)
+      - task: InstallAppleProvisioningProfile@0
+        displayName: Install Apple provisioning profile
+        inputs:
+          provProfileSecureFile: c77f0f16-e219-4145-9fcc-bc7e9ac52d0c
+      - task: ShellScript@2
+        displayName: Determine signing style and pods update
+        inputs:
+          scriptPath: >-
+            $(Agent.HomeDirectory)/scripts/determine-signing-style-and-pods-update.sh
+          disableAutoCwd: true
+          cwd: $(Build.SourcesDirectory)
+      - task: CmdLine@1
+        displayName: Update Xcode build settings
+        continueOnError: true
+        inputs:
+          filename: node
+          arguments: >-
+            $(Agent.HomeDirectory)/scripts/build-xcproject-analyzer/node_modules/@build/xcproject-analyzer-script/script/bin.js
+            --app-id="20396f3d-b31a-4789-a4f5-7d78683f62a0"
+            --app-insights-key="$(AppInsightsKey)"
+            --xc-workspace-path="$(APPCENTER_XCODE_WORKSPACE)"
+            --scheme="Calabash" --code-sign-style="$(SIGNING_OPTION)"
+            --app-provisioning-profile-uuid="40c83575-78b7-48f2-87fc-49bf0eb14f48"
+            --code-sign-identity="$(APPLE_CERTIFICATE_SIGNING_IDENTITY)"
+            --development-team="66LZ29Q44H"
+            --app-bundle-identifier="com.EmatterTechnologies.LupApp"
+          workingFolder: $(Build.SourcesDirectory)
+      - task: Xcode@4
+        displayName: Xcode build (signed)
+        inputs:
+          actions: clean
+          configuration: ''
+          xcWorkspacePath: $(APPCENTER_XCODE_PROJECT)
+          scheme: Calabash
+          xcodeDeveloperDir: /Applications/Xcode_14.1.app/Contents/Developer
+          packageApp: true
+          archivePath: $(agent.builddirectory)/output/build/archive
+          exportPath: $(agent.builddirectory)/output/build/export
+          signingOption: $(SIGNING_OPTION)
+          outputPattern: $(agent.builddirectory)/output/build
+      - task: CopyFiles@2
+        displayName: Copy build files to staging
+        inputs:
+          SourceFolder: $(agent.builddirectory)/output/build/export
+          Contents: '**/*.ipa'
+          TargetFolder: $(build.artifactstagingdirectory)/build
+          OverWrite: true
+          flattenFolders: true
+      - task: CopyFiles@2
+        displayName: Copy symbol files to staging
+        inputs:
+          SourceFolder: >-
+            $(agent.builddirectory)/output/build/archive/Calabash.xcarchive/dSYMs
+          Contents: '**/*.dSYM/**'
+          TargetFolder: $(build.artifactstagingdirectory)/symbols
+          OverWrite: true
+      - task: PublishBuildArtifacts@1
+        displayName: Publish build
+        inputs:
+          PathtoPublish: $(build.artifactstagingdirectory)/build
+          ArtifactName: build
+          TargetPath: \\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)
+      - task: PublishBuildArtifacts@1
+        displayName: Publish symbols
+        continueOnError: true
+        inputs:
+          PathtoPublish: $(build.artifactstagingdirectory)/symbols
+          ArtifactName: symbols
+          TargetPath: \\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)
