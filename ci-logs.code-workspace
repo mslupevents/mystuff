@@ -1,0 +1,104 @@
+{
+	"folders": [
+		{
+			"name": "cicd-workflows",
+			"path": "../Github/cicd-workflows"
+		},
+		{
+			"name": "lup.barnyarddawg",
+			"path": "../Github/lup.barnyarddawg"
+		},
+		{
+			"name": "lup.elmerfudd",
+			"path": "../Github/lup.elmerfudd"
+		},
+		{
+			"name": "lup.foghornleghorn",
+			"path": "../Github/lup.foghornleghorn"
+		},
+		{
+			"name": "Lup.BackgroundReminderTicketingService",
+			"path": "../Github/Lup.BackgroundReminderTicketingService"
+		},
+		{
+			"name": "lup.mobileregistration",
+			"path": "../Github/lup.mobileregistration"
+		},
+		{
+			"name": "lup.zapier",
+			"path": "../Github/lup.zapier"
+		},
+		{
+			"name": "lup.cartaband",
+			"path": "../Github/lup.cartaband"
+		},
+		{
+			"name": "lup.coolcat",
+			"path": "../Github/lup.coolcat"
+		},
+		{
+			"name": "lup.galenerso",
+			"path": "../Github/lup.galenerso"
+		},
+		{
+			"name": "lup.jarjarbinks",
+			"path": "../Github/lup.jarjarbinks"
+		},
+		{
+			"name": "exposervice",
+			"path": "../Github/exposervice"
+		},
+		{
+			"name": "exponewsstats",
+			"path": "../Github/exponewsstats"
+		},
+		{
+			"name": "lup.ticketing",
+			"path": "../Github/lup.ticketing"
+		},
+		{
+			"name": "lup.hectorthebulldog",
+			"path": "../Github/lup.hectorthebulldog"
+		},
+		{
+			"name": "lup.ticketstream",
+			"path": "../Github/lup.ticketstream"
+		},
+		{
+			"name": "exponewscloud",
+			"path": "../Github/exponewscloud"
+		},
+		{
+			"name": "lup.emmawebster",
+			"path": "../Github/lup.emmawebster"
+		},
+		{
+			"path": "../Github/lup.bugsbunny"
+		},
+		{
+			"path": "../Github/lup.charliedog"
+		},
+		{
+			"path": "../Github/lup.crazyfrog"
+		},
+		{
+			"path": "../Github/lup.gossamer"
+		},
+		{
+			"path": "../Github/lup.heneryhawk"
+		},
+		{
+			"path": "../Github/lup.jangofett"
+		},
+		{
+			"path": "../Github/lup.theodoretasmanian"
+		},
+		{
+			"path": "../Github/lup.api.theodoretasmanian"
+		},
+		{
+			"path": "../Github/lup.bertie"
+		}
+	],
+	"settings": {}
+}
